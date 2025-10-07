@@ -217,18 +217,34 @@ router.get("/category/:categoryID", async (req, res) => {
   }
 });
 
+// ----------------- GET all anime -----------------
+router.get("/anime", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT animeID, animeName FROM anime ORDER BY animeName ASC");
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching anime list:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ----------------- GET bundle packages -----------------
 router.get("/packages", async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
         p.productID, p.productTitle, p.listPrice, p.productImage,
-        a.animeID, a.animeName
+        COALESCE(a.animeID, 0) AS animeID,
+        COALESCE(a.animeName, 'Miscellaneous') AS animeName
       FROM product AS p
-      INNER JOIN anime AS a ON p.anime = a.animeID
+      LEFT JOIN anime AS a ON p.anime = a.animeID
     `);
 
-    // Group by anime
+    if (!rows || rows.length === 0) {
+      return res.json([]);
+    }
+
+    // Group products by animeID
     const animeGroups = {};
     for (const p of rows) {
       if (!animeGroups[p.animeID]) animeGroups[p.animeID] = [];
@@ -237,46 +253,50 @@ router.get("/packages", async (req, res) => {
 
     const packages = [];
 
+    // Build bundle packages
     for (const animeID in animeGroups) {
       const group = animeGroups[animeID];
+      const selectedItems = group.slice(0, 3);
+      const total = selectedItems.reduce(
+        (sum, item) => sum + parseFloat(item.listPrice || 0),
+        0
+      );
+      const discountRate = group.length >= 2 ? 0.15 : 0.05;
+      const discountedPrice = +(total * (1 - discountRate)).toFixed(2);
+      const mainImage =
+        selectedItems.find((i) => i.productImage)?.productImage || "default.png";
 
-      // Only create bundle if at least 2 items exist for that anime
-      if (group.length >= 2) {
-        // Limit to a max of 3–4 items per bundle for visual clarity
-        const selectedItems = group.slice(0, 3);
+      packages.push({
+        animeID: parseInt(animeID),
+        animeName: selectedItems[0].animeName,
+        items: selectedItems,
+        price: discountedPrice,
+        original: +total.toFixed(2),
+        discountPercent: Math.round(discountRate * 100),
+        image: `/uploads/${mainImage}`,
+      });
+    }
 
-        const total = selectedItems.reduce(
-          (sum, item) => sum + parseFloat(item.listPrice || 0),
-          0
-        );
-
-        const discountRate = 0.15; // 15% off bundle
-        const discountedPrice = +(total * (1 - discountRate)).toFixed(2);
-
-        // Use the first available product image
-        const mainImage =
-          selectedItems.find((i) => i.productImage)?.productImage ||
-          "default.png";
-
-        packages.push({
-          animeID: parseInt(animeID),
-          animeName: selectedItems[0].animeName,
-          items: selectedItems,
-          price: discountedPrice,
-          original: +total.toFixed(2),
-          discountPercent: Math.round(discountRate * 100),
-          image: `/uploads/${mainImage}`,
-        });
-      }
+    // If no valid packages were made, still show one product bundle
+    if (packages.length === 0 && rows.length > 0) {
+      const first = rows[0];
+      packages.push({
+        animeID: first.animeID || 0,
+        animeName: first.animeName || "Miscellaneous",
+        items: [first],
+        price: parseFloat(first.listPrice || 0),
+        original: parseFloat(first.listPrice || 0),
+        discountPercent: 0,
+        image: `/uploads/${first.productImage || "default.png"}`,
+      });
     }
 
     res.json(packages);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching packages:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Autoplay } from "swiper";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import { FaInfoCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -11,10 +11,11 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-// Dynamic API base (works both locally and on Vercel)
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+// Dynamic API base (use backend URL in production, local in dev)
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-// Get image path
+// Helper to safely build image URLs
 function getImageUrl(filename) {
   if (!filename || typeof filename !== "string" || filename.trim() === "") {
     return "/images/placeholder.png";
@@ -37,7 +38,7 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
   const [timeLeft, setTimeLeft] = useState({});
   const navigate = useNavigate();
 
-  // Random site-wide discount
+  // Generate or restore site-wide discount and deal timer
   useEffect(() => {
     const discount = sessionStorage.getItem("siteDiscount")
       ? parseInt(sessionStorage.getItem("siteDiscount"))
@@ -52,7 +53,7 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
     sessionStorage.setItem("specialDealEnd", dealTime);
   }, []);
 
-  // Countdown timer
+  // Countdown timer for special deal
   useEffect(() => {
     if (!specialDeal) return;
     const interval = setInterval(() => {
@@ -67,7 +68,7 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
     return () => clearInterval(interval);
   }, [specialDeal]);
 
-  // Fetch data
+  // Fetch product + category data from backend
   useEffect(() => {
     axios
       .get(`${API_BASE}/api/products`)
@@ -93,9 +94,9 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
     }
   }, []);
 
-  // Navigation helpers
   const goToProduct = (id) => navigate(`/product/${id}`);
 
+  // Add item to cart
   const handleAddToCart = (product) => {
     const cartItem = {
       id: product.productID,
@@ -109,6 +110,7 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
     addToCart(cartItem);
   };
 
+  // Go to category page
   const handleShopNow = (categoryID) => {
     navigate(`/category/${categoryID}`);
   };
@@ -167,7 +169,7 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
                           }
                         />
                         <FaInfoCircle
-                          className="info-icon position-absolute top-0 end-0 m-2 text-primary"
+                          className="info-icon"
                           onClick={() => goToProduct(product.productID)}
                           title="View Product"
                           style={{ cursor: "pointer", fontSize: "1.5rem" }}
@@ -231,7 +233,10 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
                       className="package-grid"
                       style={{
                         display: "grid",
-                        gridTemplateColumns: `repeat(${Math.min(pkg.items.length, 3)}, 1fr)`,
+                        gridTemplateColumns: `repeat(${Math.min(
+                          pkg.items.length,
+                          3
+                        )}, 1fr)`,
                         height: "250px",
                         overflow: "hidden",
                         borderBottom: "1px solid #eee",
@@ -332,7 +337,7 @@ export default function Home({ user, cart, setCart, addToCart, siteDiscount }) {
         </div>
       </section>
 
-      {/* Special Deal */}
+      {/* Special Deal Section */}
       <section className="py-5 bg-light" id="deal">
         <div className="container text-center">
           <h2>
