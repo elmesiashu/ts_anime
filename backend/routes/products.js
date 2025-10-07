@@ -31,38 +31,49 @@ function generateSKU() {
   return sku;
 }
 
-// ----------------- GET all products -----------------
-router.get("/", async (req, res) => {
-  const keyword = req.query.keyword || "";
+// ----------------- GET single product by ID -----------------
+router.get("/:id", async (req, res) => {
+  const productID = req.params.id;
   const discount = 0.3;
 
   try {
-    const [rows] = await db.query(
+    const [products] = await db.query(
       `SELECT 
-         p.productID, p.productSKU, p.productTitle, p.productDescription, p.listPrice, p.stock, p.productImage,
-         c.categoryID, c.categoryName,
-         a.animeID, a.animeName,
-         EXISTS(SELECT 1 FROM product_options po WHERE po.productID = p.productID) AS hasOptions
+         p.productID, p.productTitle, p.productDescription, p.listPrice, p.stock, p.productImage,
+         c.categoryID, c.categoryName
        FROM product AS p
        INNER JOIN category AS c ON p.categoryID = c.categoryID
-       INNER JOIN anime AS a ON p.anime = a.animeID
-       WHERE p.productTitle LIKE ? OR c.categoryName LIKE ? OR a.animeName LIKE ?`,
-      [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`]
+       WHERE p.productID = ?`,
+      [productID]
     );
 
-    const products = rows.map((p) => ({
-      ...p,
-      productImage: p.productImage ? `/uploads/${p.productImage}` : null,
-      discountedPrice: (p.listPrice * (1 - discount)).toFixed(2),
-      hasOptions: !!p.hasOptions,
+    if (products.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const product = products[0];
+    product.productImage = product.productImage ? `/uploads/${product.productImage}` : null;
+    product.discountedPrice = (product.listPrice * (1 - discount)).toFixed(2);
+
+    // Fetch options
+    const [optionsRows] = await db.query(
+      `SELECT optionName, optionValue, optionImage FROM product_options WHERE productID = ?`,
+      [productID]
+    );
+
+    const options = optionsRows.map((opt) => ({
+      optionName: opt.optionName,
+      optionValue: opt.optionValue,
+      preview: opt.optionImage ? `/uploads/${opt.optionImage}` : null,
     }));
 
-    res.json(products);
+    res.json({ product, options });
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching product:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // ----------------- UPLOAD product -----------------
 router.post("/upload", cpUpload, async (req, res) => {
@@ -106,17 +117,6 @@ router.post("/upload", cpUpload, async (req, res) => {
   }
 });
 
-// ----------------- DELETE product -----------------
-router.delete("/:id", async (req, res) => {
-  const productID = req.params.id;
-  try {
-    await db.query("DELETE FROM product WHERE productID=?", [productID]);
-    res.json({ message: "Deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
 
 // ----------------- GET categories with image -----------------
 router.get("/categories-with-image", async (req, res) => {
@@ -141,49 +141,6 @@ router.get("/categories-with-image", async (req, res) => {
     res.json(categoriesWithImages);
   } catch (err) {
     console.error("Error fetching categories with image:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// ----------------- GET single product by ID -----------------
-router.get("/:id", async (req, res) => {
-  const productID = req.params.id;
-  const discount = 0.3;
-
-  try {
-    const [products] = await db.query(
-      `SELECT 
-         p.productID, p.productTitle, p.productDescription, p.listPrice, p.stock, p.productImage,
-         c.categoryID, c.categoryName
-       FROM product AS p
-       INNER JOIN category AS c ON p.categoryID = c.categoryID
-       WHERE p.productID = ?`,
-      [productID]
-    );
-
-    if (products.length === 0) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    const product = products[0];
-    product.productImage = product.productImage ? `/uploads/${product.productImage}` : null;
-    product.discountedPrice = (product.listPrice * (1 - discount)).toFixed(2);
-
-    // Fetch options
-    const [optionsRows] = await db.query(
-      `SELECT optionName, optionValue, optionImage FROM product_options WHERE productID = ?`,
-      [productID]
-    );
-
-    const options = optionsRows.map((opt) => ({
-      optionName: opt.optionName,
-      optionValue: opt.optionValue,
-      preview: opt.optionImage ? `/uploads/${opt.optionImage}` : null,
-    }));
-
-    res.json({ product, options });
-  } catch (err) {
-    console.error("Error fetching product:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -298,5 +255,16 @@ router.get("/packages", async (req, res) => {
   }
 });
 
+// ----------------- DELETE product -----------------
+router.delete("/delete/:id", async (req, res) => {
+  const productID = req.params.id;
+  try {
+    await db.query("DELETE FROM product WHERE productID=?", [productID]);
+    res.json({ message: "Deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 module.exports = router;
