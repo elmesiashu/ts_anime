@@ -146,7 +146,7 @@ export default function Navbar({ user, logout, cart = [] }) {
               </Link>
             )}
 
-            {/* Products Dropdown */}
+            {/* Products Dropdown
             <div
               className="dropdown"
               onMouseEnter={() => setShowAnimeDropdown(true)}
@@ -173,7 +173,7 @@ export default function Navbar({ user, logout, cart = [] }) {
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Cart */}
             <div className="icon-wrapper cart-icon">

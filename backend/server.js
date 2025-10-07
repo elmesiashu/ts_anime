@@ -7,8 +7,8 @@ const session = require("express-session");
 
 const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/products");
-const cartRoute = require("./routes/cart");
-const orderRoute = require("./routes/order");
+const cartRoutes = require("./routes/cart");
+const orderRoutes = require("./routes/order");
 
 
 dotenv.config();
