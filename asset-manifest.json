@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/ts_anime/static/css/main.211855f4.css",
+    "main.js": "/ts_anime/static/js/main.74e81682.js",
+    "static/css/50.953b00fa.chunk.css": "/ts_anime/static/css/50.953b00fa.chunk.css",
+    "static/js/50.b496b470.chunk.js": "/ts_anime/static/js/50.b496b470.chunk.js",
+    "static/js/453.d7446e4a.chunk.js": "/ts_anime/static/js/453.d7446e4a.chunk.js",
+    "static/media/bootstrap-icons.woff?": "/ts_anime/static/media/bootstrap-icons.1295669cd4e305c97f2c.woff",
+    "static/media/bootstrap-icons.woff2?": "/ts_anime/static/media/bootstrap-icons.92ea18a81d737146ff04.woff2",
+    "index.html": "/ts_anime/index.html",
+    "main.211855f4.css.map": "/ts_anime/static/css/main.211855f4.css.map",
+    "main.74e81682.js.map": "/ts_anime/static/js/main.74e81682.js.map",
+    "50.953b00fa.chunk.css.map": "/ts_anime/static/css/50.953b00fa.chunk.css.map",
+    "50.b496b470.chunk.js.map": "/ts_anime/static/js/50.b496b470.chunk.js.map",
+    "453.d7446e4a.chunk.js.map": "/ts_anime/static/js/453.d7446e4a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.211855f4.css",
+    "static/js/main.74e81682.js"
+  ]
+}
